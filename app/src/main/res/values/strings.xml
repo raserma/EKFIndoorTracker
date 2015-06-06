@@ -1,3 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">EKFIndoorTracker</string>
+
+    <string name="app_name">IndoorTracker</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_database">Database</string>
+    <string name="action_pathloss_model">Choose AP path loss model</string>
+    <string name="action_position_algorithm">Choose a positioning approach</string>
+    <string name="button_pl_estimator">Estimate Path Loss</string>
+    <string name="button_ls_tracker">Least Square Tracker</string>
+    <string name="button_ekf_tracker">Non Linear LS Tracker</string>
+    <string name="button_measurements">Measurements</string>
+    <string name="button_estimation">Estimation</string>
+    <string name="button_make_estimation">Make Estimation</string>
+    <string name="button_input_coeff">Introduce coefficients manually</string>
+    <string name="title_activity_measurements">Measurements</string>
+    <string name="text_dbms">dBms</string>
+    <string name="text_iterations">iterations</string>
+    <string name="text_meters">meters away</string>
+    <string name="button_start">Start</string>
+    <string name="button_next">Next</string>
+    <string name="button_stop">Stop</string>
+    <string name="dialog_bssid">Selected AP MAC identification</string>
+    <string name="dialog_coefficients">Introduce coefficients</string>
+    <string name="title_activity_measuring_data">MeasuringDataActivity</string>
+    <string name="title_activity_path_loss_estimation">PathLossEstimationActivity</string>
+    <string name="title_activity_applying_regression">ApplyingRegressionActivity</string>
+    <string name="title_activity_map_view">MapViewActivity</string>
+
 </resources>

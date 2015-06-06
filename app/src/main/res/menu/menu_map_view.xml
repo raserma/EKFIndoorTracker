@@ -1,0 +1,19 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:tools="http://schemas.android.com/tools"
+      tools:context="com.example.android.lsindoortracker.MapViewActivity">
+
+    <item android:id="@+id/action_database"
+          android:title="@string/action_database"
+          android:orderInCategory="100"
+          android:showAsAction="never"/>
+
+    <item android:id="@+id/action_pathloss_model"
+          android:title="@string/action_pathloss_model"
+          android:orderInCategory="100"
+          android:showAsAction="never"/>
+
+    <item android:id="@+id/action_position_algorithm"
+          android:title="@string/action_position_algorithm"
+          android:orderInCategory="100"
+          android:showAsAction="never"/>
+</menu>
