@@ -45,7 +45,7 @@ public class LSAlgorithm {
      * @return Point object with AP position
      *         Point(-10, results.size()) if acquired APs < required AP for LS
      */
-    public Point getUserPosition(List<ScanResult> results, int idBssidApSelected, int
+    public Point getInitialUserPosition(List<ScanResult> results, int idBssidApSelected, int
             posAlgSelected){
         IndoorTrackerDatabaseHandler apdbhandler =  new IndoorTrackerDatabaseHandler
                 (mapViewActivityContext);
