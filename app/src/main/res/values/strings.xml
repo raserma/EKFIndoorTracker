@@ -8,8 +8,7 @@
     <string name="action_pathloss_model">Choose AP path loss model</string>
     <string name="action_position_algorithm">Choose a positioning approach</string>
     <string name="button_pl_estimator">Estimate Path Loss</string>
-    <string name="button_ls_tracker">Least Square Tracker</string>
-    <string name="button_ekf_tracker">Non Linear LS Tracker</string>
+    <string name="button_ls_tracker">EKF Tracker</string>
     <string name="button_measurements">Measurements</string>
     <string name="button_estimation">Estimation</string>
     <string name="button_make_estimation">Make Estimation</string>

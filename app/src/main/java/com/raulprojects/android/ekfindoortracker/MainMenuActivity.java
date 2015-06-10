@@ -53,9 +53,5 @@ public class MainMenuActivity extends Activity {
 
     }
 
-    /* Button Non-Linear LS Tracker Click Listener */
-    public void initiateNLLSTracker(View view){
-
-    }
 
 }

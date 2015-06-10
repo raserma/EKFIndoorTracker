@@ -19,7 +19,11 @@ import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
+
 import com.qozix.tileview.TileView;
+
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -65,7 +69,6 @@ public class MapViewActivity extends Activity {
     public long start, end;
     private TileView mTileView;
     private ImageView mMarker;
-    private Point mInitialGuess;
     private Point mUserPosition;
     private WifiManager mWifi;
     private BroadcastReceiver mReceiver;
@@ -74,12 +77,15 @@ public class MapViewActivity extends Activity {
     private boolean mIsScanned = false;
     private boolean mIsAlgorithmFinished = true;
     private int mNumberProcessingThreads = 0;
+    private List<APAlgorithmData> mAlgorithmInputDataList;
+    private Prefilter mFilter;
+    private List<ScanResult> filteredResults;
     private LSAlgorithm mLSAlgorithm;
-    private EKFAlgorithm mEKFAlgorithm;
+    private int mIterationK;
+    private EKFAlgorithmData mEKFData;
     private int mIdBssidApSelected;
-    private int mPosAlgSelected;
     public static final int UPDATE_MAP = 1;
-    public static final int SCAN_INTERVAL = 3000; // 3 seconds
+    public static final int SCAN_INTERVAL = 2000; // 3 seconds
     public static final int SCAN_DELAY = 1000; // 1 second
     public static final int MAX_PROCESSING_THREADS = 1; // 1 thread
     /** UI Handler which updates map */
@@ -160,12 +166,12 @@ public class MapViewActivity extends Activity {
      * user or Android system pauses or destroys the application.
      */
     private void setScanningTask(){
-        mIdBssidApSelected = 3; // By default, AP2 is chosen to provide pathloss model
+        mIdBssidApSelected = 3; // By default, AP3 is chosen to provide pathloss model
 
-        /* Hyperbolic = 0, Weighted Hyperbolic = 1, Circular = 2, Weighted Circular = 3 */
-        mPosAlgSelected = 3; // By default, approach selected is Weighted Circular approach
         mWifi = (WifiManager) getSystemService(getApplicationContext().WIFI_SERVICE);
-        mLSAlgorithm = new LSAlgorithm(this);
+        mFilter = new Prefilter(this);
+        mIterationK = 1;
+
         mTimer = new Timer();
         mTimer.schedule(new TimerTask() {
             @Override
@@ -198,38 +204,109 @@ public class MapViewActivity extends Activity {
                     mNumberProcessingThreads++;
                     mIsScanned = true;
                     mIsAlgorithmFinished = false;
-                    // Indoor positioning algorithm
-                    /* try {
-                    Log.i("thread", "sleep antes");
-                    sleep(10000);
-                    Log.i("thread", "sleep des");
-                    } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    Log.i("thread", "sleep exception");
-                    }*/
-                    /*// Testing code
-                    Random r = new Random();
-                    int Low = 0;
-                    int High = 150;
-                    int R = r.nextInt(High-Low) + Low;*/
 
-                    // Initial guess from LS
-                    mInitialGuess = mLSAlgorithm.getInitialUserPosition(results, mIdBssidApSelected,
-                            mPosAlgSelected);
+                    /** Extended Kalman Filter Algorithm  */
+                    filteredResults = mFilter.filterEverythingOut(results);
 
-                    // Extended Kalman Filter (EKF)
-                    mUserPosition = mEKFAlgorithm.getUserPosition (mInitialGuess);
+                    // If more than 4 AP were acquired, apply EKF
+                    if(filteredResults.size() >= 4){
+
+                        /* Gets the 4 strongest RSS from 4 APs */
+                        filteredResults = getStrongestRSSList(filteredResults);
+
+                        /* Translates RSS to distance by using estimated pathloss model */
+                        mAlgorithmInputDataList
+                                = mFilter.translatesRSStoDistance (filteredResults, mIdBssidApSelected);
+
+                        if (mIterationK == 1){ // First iteration uses WCLS algorithm
+
+                            /* Initial guess using Weighted Circular Least Square algorithm */
+                            Point initialGuess = mLSAlgorithm.applyWCLSAlgorithm
+                                    (mAlgorithmInputDataList);
+                            double[] x = new double[]{initialGuess.x, initialGuess.y};
+
+                            /* Set covariance matrix P */
+                            double[][] P = new double[][]{
+                                    {10,0},
+                                    {0, 10}
+                            };
+
+                            mEKFData = new EKFAlgorithmData(x, P);
+
+                            /* Apply EKF algorithm with algorithmInputDataList and initial
+                            guesses from WCLS algorithm */
+                            mEKFData = mEKFData.applyEKFAlgorithm(mAlgorithmInputDataList,
+                                    mEKFData);
+                            mIterationK++;
+                        }
+                        else
+                        {
+                            /* Apply EKF algorithm with algorithmInputDataList and estimates from
+                             previous iteration */
+                            mEKFData = mEKFData.applyEKFAlgorithm(mAlgorithmInputDataList,
+                                        mEKFData);
+                            mIterationK++;
+                        }
+
+                        int coordinateX = (int) mEKFData.x.get(0);
+                        int coordinateY = (int) mEKFData.x.get(1);
+
+                        mUserPosition = new Point(coordinateX, coordinateY);
+
+                    }
+                    else // If less than 4 AP were acquired, return error code
+                    {
+                        mUserPosition = new Point (-10, filteredResults.size());
+                    }
 
                     /* Call the UPDATE_MAP case method of UI Handler with user position on it */
                     Message msg = mUIHandler.obtainMessage(UPDATE_MAP, mUserPosition);
                     mUIHandler.sendMessage(msg);
                     mNumberProcessingThreads--;
                     mIsAlgorithmFinished = true;
+
+
+
                 }
             };
             t.start(); // start new scan thread
         }
     }
+
+    /**
+     * Gets X strongest RSS list from X APs:
+     *      Sorts ScanResult list in descending order by "level" field
+     *      Gets the X first elements of the list by using subList
+     * @param results WiFi scan results list with all the known AP data
+     * @return WiFi scan results list with the X strongest APs
+     */
+    private List<ScanResult> getStrongestRSSList (List<ScanResult> results){
+
+        /* Sorts the list by "level" field name */
+        Collections.sort(results, new Comparator<ScanResult>() {
+            public int compare(ScanResult one, ScanResult other) {
+                int returnVal = 0;
+
+                if (one.level > other.level) {
+                    returnVal = -1;
+                } else if (one.level < other.level) {
+                    returnVal = 1;
+                } else if (one.level == other.level) {
+                    returnVal = 0;
+                }
+                return returnVal;
+
+            }
+        });
+
+        /* Gets the X first elements of the list in a new list */
+        int X = 4; // X = 4
+        List<ScanResult> strongestResults = results.subList(0, X);
+
+        return strongestResults;
+    }
+
+
     /* Register Broadcast receiver */
     @Override
     protected void onStart(){
@@ -291,10 +368,6 @@ public class MapViewActivity extends Activity {
             case R.id.action_pathloss_model:
                 dialogBssid();
                 return true;
-            case R.id.action_position_algorithm:
-                // Dialog with 4 options - single choice
-                dialogPositionAlgorithm();
-                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -324,33 +397,6 @@ public class MapViewActivity extends Activity {
                         mIdBssidApSelected = 0;
                     }
                 })
-                .show();
-    }
-    /** Asks for desired positioning algorithm used for estimating user position */
-    private void dialogPositionAlgorithm(){
-        final CharSequence[] choiceList =
-                {"Hyperbolic approach", "Weighted Hyperbolic approach" , "Circular approach" ,
-                        "Weighted Circular Approach" };
-
-        new AlertDialog.Builder(this)
-                .setTitle("Select desired positioning approach")
-                        // Set up the choices
-                .setSingleChoiceItems(
-                        choiceList,
-                        -1, // No preview choice selected
-                        new DialogInterface.OnClickListener() {
-
-                            @Override
-                            public void onClick(
-                                    DialogInterface dialog,
-                                    int which) {
-                                dialog.dismiss();
-                                mPosAlgSelected = which;
-                                Toast.makeText( getBaseContext(), choiceList[which] + " selected",
-                                        Toast.LENGTH_SHORT)
-                                        .show();
-                            }
-                        })
                 .show();
     }
 }
