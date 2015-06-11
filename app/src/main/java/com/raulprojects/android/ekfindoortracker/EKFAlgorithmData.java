@@ -127,6 +127,7 @@ public class EKFAlgorithmData {
         Q = CommonOps.diag(sigma_xy);
 
         // R, measurement noise covariance matrix
+        // R0 = 0.1 seems fine, = 1, not that good, try lower
         double[] sigma_meas = new double[]{0.1, 0.1, 0.1, 0.1};
         R = CommonOps.diag(sigma_meas);
     }

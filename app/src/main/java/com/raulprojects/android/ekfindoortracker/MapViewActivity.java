@@ -168,6 +168,8 @@ public class MapViewActivity extends Activity {
     private void setScanningTask(){
         mIdBssidApSelected = 3; // By default, AP3 is chosen to provide pathloss model
 
+        mLSAlgorithm = new LSAlgorithm();
+
         mWifi = (WifiManager) getSystemService(getApplicationContext().WIFI_SERVICE);
         mFilter = new Prefilter(this);
         mIterationK = 1;
@@ -207,7 +209,6 @@ public class MapViewActivity extends Activity {
 
                     /** Extended Kalman Filter Algorithm  */
                     filteredResults = mFilter.filterEverythingOut(results);
-
                     // If more than 4 AP were acquired, apply EKF
                     if(filteredResults.size() >= 4){
 
