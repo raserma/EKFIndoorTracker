@@ -15,7 +15,16 @@ import static org.ejml.ops.CommonOps.subtract;
 import static org.ejml.ops.CommonOps.subtractEquals;
 
 /**
- * Created by raul on 10.6.2015.
+ * Algorithm class which estimates user position by applying Extended Kalman Filter with static
+ * mobile case.
+ *
+ *  For a more detailed explanation on how this algorithm has been derived and deployed,
+ *  please refer to MSc Thesis.
+ *
+ *  NOTE: A Java matrix library will be used to handle matrix operations in an efficient way.
+ *  EJML has been chosen because its good performance showed at Java Matrix Benchmark
+ *  (https://code.google.com/p/java-matrix-benchmark/)
+ *
  */
 public class EKFAlgorithmData {
 
@@ -36,6 +45,8 @@ public class EKFAlgorithmData {
 
     private LinearSolver<DenseMatrix64F> solver;
 
+    /** Constructors */
+
     public EKFAlgorithmData(double [] x, double [][] P){
         this.x = new DenseMatrix64F(x.length, 1, false, x);
         this.P = new DenseMatrix64F(P);
@@ -44,6 +55,16 @@ public class EKFAlgorithmData {
         this.x = x;
         this.P = P;
     }
+
+    /**
+     * Main method which initializes main paramenters x, P, F, H, Q and R,
+     * and then apply prediction and correction stages.
+     * @param algorithmInputDataList List of APAlgorithmData objects with the 4 AP data  (BSSID -
+     *                               estimated distance - RSS)
+     * @param initialEstimates Vector x and matrix P corresponding to the initial estimates of
+     *                         state mean and covariance.
+     * @return state mean and covariance estimated after EKF
+     */
 
     public EKFAlgorithmData applyEKFAlgorithm ( List<APAlgorithmData> algorithmInputDataList,
                                                 EKFAlgorithmData initialEstimates){

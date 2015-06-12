@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  *  Algorithm class which will estimate user position by applying Weighted Circular Least Square
- *  algorithm.
+ *  algorithm. It is used for getting the initial guess x0/0 for inputting EKF algorithm.
  *
  *  For a more detailed explanation on how these algorithms have been derived and deployed,
  *  please refer to Msc Thesis.
